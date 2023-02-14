@@ -111,16 +111,6 @@ def main(params):
     model_params = [p for p in model.parameters() if p.requires_grad]
     optimizer = torch.optim.Adam(model_params, lr=params.train.learning_rate)
 
-    if params.train.use_lr_scheduler:
-        scheduler = lr_scheduler.ReduceLROnPlateau(
-            optimizer,
-            mode="max",
-            factor=0.2,
-            patience=params.train.lr_scheduler_patience,
-            threshold=0.0001,
-            verbose=True,
-        )
-
     train_map_metric = MeanAveragePrecision(iou_type="segm").to(device)
     val_map_metric = MeanAveragePrecision(iou_type="segm").to(device)
 
