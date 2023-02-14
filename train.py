@@ -15,6 +15,7 @@ from utils.provider import (
     threshold_masks,
 )
 
+BATCH_SIZE = 12
 
 def train_one_epoch(model, device, data_loader, optimizer, log_freq=None):
     model.train()
@@ -133,22 +134,18 @@ def main(params):
                 train_map = evaluate(model, device, data_loader, train_map_metric)
             val_map = evaluate(model, device, data_loader_validation, val_map_metric)
 
-            if params.train.use_lr_scheduler:
-                scheduler.step(val_map["map"])
-
-            if params.logging.wandb_enabled:
-                train_map_logs = {}
-                if params.logging.log_train_map:
-                    train_map_logs = {f"train/{k}": v.item() for k, v in train_map.items()}
-                val_map_logs = {f"val/{k}": v.item() for k, v in val_map.items()}
-                wandb.log(
-                    {
-                        "epoch": epoch + 1,
-                        "lr": optimizer.param_groups[0]["lr"],
-                        **train_map_logs,
-                        **val_map_logs,
-                    }
-                )
+            train_map_logs = {}
+            if params.logging.log_train_map:
+                train_map_logs = {f"train/{k}": v.item() for k, v in train_map.items()}
+            val_map_logs = {f"val/{k}": v.item() for k, v in val_map.items()}
+            wandb.log(
+                {
+                    "epoch": epoch + 1,
+                    "lr": optimizer.param_groups[0]["lr"],
+                    **train_map_logs,
+                    **val_map_logs,
+                }
+            )
 
             val_map_average = val_map["map"].cpu().item()
 
@@ -157,14 +154,11 @@ def main(params):
                 best_map = val_map_average
                 print("overwriting the best model!")
 
-                if params.logging.wandb_enabled:
-                    wandb.run.summary["best map"] = best_map
-                    torch.save(
-                        model.state_dict(),
-                        os.path.join(wandb.run.dir, "best_maskrcnn.ckpt"),
-                    )
-                else:
-                    torch.save(model.state_dict(), "weights/best_maskrcnn.ckpt")
+                wandb.run.summary["best map"] = best_map
+                torch.save(
+                    model.state_dict(),
+                    os.path.join(wandb.run.dir, "best_maskrcnn.ckpt"),
+                )
             else:
                 early_stop_counter += 1
 
@@ -172,13 +166,10 @@ def main(params):
                 print("Early stopping at: " + str(epoch))
                 break
 
-    if params.logging.wandb_enabled:
-        torch.save(
-            model.state_dict(),
-            os.path.join(wandb.run.dir, f"epoch_{last_epoch}_maskrcnn.ckpt"),
-        )
-    else:
-        torch.save(model.state_dict(), f"weights/epoch_{last_epoch}_maskrcnn.ckpt")
+    torch.save(
+        model.state_dict(),
+        os.path.join(wandb.run.dir, f"epoch_{last_epoch}_maskrcnn.ckpt"),
+    )
 
     print("Training finished")
 
@@ -186,19 +177,19 @@ def main(params):
 if __name__ == "__main__":
 
     params = get_config("config.ini")
-    if params.logging.wandb_enabled:
-        wandb.init(project=params.logging.wandb_project, save_code=True)
-        wandb.run.name = os.path.basename(__file__)[:-3] + "_" + wandb.run.name.split("-")[2]
-        wandb.run.save()
 
-        config = wandb.config
-        config.train_data_folder = params.data.train_data_folder
-        config.train_ann_file = params.data.train_ann
-        config.validation_data_folder = params.data.validation_data_folder
-        config.validation_ann_fie = params.data.validation_ann
-        config.lr = params.train.learning_rate
-        config.bs = params.train.batch_size
-        config.num_worker = params.train.num_worker
+    wandb.init(project=params.logging.wandb_project, save_code=True)
+    wandb.run.name = os.path.basename(__file__)[:-3] + "_" + wandb.run.name.split("-")[2]
+    wandb.run.save()
+
+    config = wandb.config
+    config.train_data_folder = params.data.train_data_folder
+    config.train_ann_file = params.data.train_ann
+    config.validation_data_folder = params.data.validation_data_folder
+    config.validation_ann_fie = params.data.validation_ann
+    config.lr = params.train.learning_rate
+    config.bs = BATCH_SIZE
+    config.num_worker = params.train.num_worker
 
     main(params)
 
