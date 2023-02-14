@@ -87,7 +87,7 @@ def main(params):
     # define training and validation data loaders
     data_loader = torch.utils.data.DataLoader(
         dataset,
-        batch_size=params.train.batch_size,
+        batch_size=BATCH_SIZE,
         shuffle=True,
         num_workers=params.train.num_worker,
         collate_fn=collate_fn,
