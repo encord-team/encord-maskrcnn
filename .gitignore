@@ -152,3 +152,4 @@ cython_debug/
 #.idea/
 config.ini
 .DS_Store
+/.idea
