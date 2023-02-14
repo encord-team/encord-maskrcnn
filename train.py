@@ -149,6 +149,7 @@ def main(params):
                     model.state_dict(),
                     os.path.join(wandb.run.dir, "best_maskrcnn.ckpt"),
                 )
+                wandb.save(os.path.join(wandb.run.dir, "best_maskrcnn.ckpt"), overwrite=True)
             else:
                 early_stop_counter += 1
 
