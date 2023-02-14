@@ -1,5 +1,7 @@
 # Encord-Active MaskRCNN Example
 
+### Important Note: This project is designed to be used for the Encord-Active data centric challenge, please use the [original project](!https://github.com/encord-team/encord-active/tree/main/examples/maskrcnn-example) for training Encord-Active projects
+
 This example implements an end-to-end training and evaluation procedure for Mask R-CNN in PyTorch
 using Encord Active. 
 - The target project should follow the COCO format. You can 
