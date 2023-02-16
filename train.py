@@ -16,6 +16,10 @@ from utils.provider import (
 )
 
 BATCH_SIZE = 12
+LEARNING_RATE = 0.001
+NUM_WORKER = 2
+LR_SCHEDULER_PATIENCE = 5 # If the performance does not increase in 3 consecutive mAP measurement, LR is reduced
+LR_SCHEDULER_FACTOR = 0.2
 
 def train_one_epoch(model, device, data_loader, optimizer, log_freq=None):
     model.train()
@@ -89,7 +93,7 @@ def main(params):
         dataset,
         batch_size=BATCH_SIZE,
         shuffle=True,
-        num_workers=params.train.num_worker,
+        num_workers=NUM_WORKER,
         collate_fn=collate_fn,
     )
 
@@ -97,7 +101,7 @@ def main(params):
         dataset_validation,
         batch_size=1,
         shuffle=False,
-        num_workers=params.train.num_worker,
+        num_workers=NUM_WORKER,
         collate_fn=collate_fn,
     )
 
@@ -109,7 +113,16 @@ def main(params):
 
     # construct an optimizer
     model_params = [p for p in model.parameters() if p.requires_grad]
-    optimizer = torch.optim.Adam(model_params, lr=params.train.learning_rate)
+    optimizer = torch.optim.Adam(model_params, lr=LEARNING_RATE)
+
+    scheduler = lr_scheduler.ReduceLROnPlateau(
+        optimizer,
+        mode="max",
+        factor=LR_SCHEDULER_FACTOR,
+        patience=LR_SCHEDULER_PATIENCE,
+        threshold=0.0001,
+        verbose=True,
+    )
 
     train_map_metric = MeanAveragePrecision(iou_type="segm").to(device)
     val_map_metric = MeanAveragePrecision(iou_type="segm").to(device)
@@ -123,6 +136,8 @@ def main(params):
             if params.logging.log_train_map:
                 train_map = evaluate(model, device, data_loader, train_map_metric)
             val_map = evaluate(model, device, data_loader_validation, val_map_metric)
+
+            scheduler.step(val_map["map"])
 
             train_map_logs = {}
             if params.logging.log_train_map:
@@ -178,9 +193,7 @@ if __name__ == "__main__":
     config.train_ann_file = params.data.train_ann
     config.validation_data_folder = params.data.validation_data_folder
     config.validation_ann_fie = params.data.validation_ann
-    config.lr = params.train.learning_rate
-    config.bs = BATCH_SIZE
-    config.num_worker = params.train.num_worker
+
 
     main(params)
 
