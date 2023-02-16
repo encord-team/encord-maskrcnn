@@ -18,7 +18,7 @@ from utils.provider import (
 BATCH_SIZE = 12
 LEARNING_RATE = 0.001
 NUM_WORKER = 2
-LR_SCHEDULER_PATIENCE = 5 # If the performance does not increase in 3 consecutive mAP measurement, LR is reduced
+LR_SCHEDULER_PATIENCE = 5 # If the performance does not increase in LR_SCHEDULER_PATIENCE consecutive mAP measurement, LR is reduced
 LR_SCHEDULER_FACTOR = 0.2
 
 def train_one_epoch(model, device, data_loader, optimizer, log_freq=None):
