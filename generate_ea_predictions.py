@@ -56,5 +56,5 @@ with torch.no_grad():
                 )
                 predictions_to_store.append(prediction)
 
-with open(os.path.join(params.inference.target_data_folder, f"predictions_{params.inference.wandb_id}.pkl"), "wb") as f:
+with open(os.path.join(params.inference.target_data_folder, "predictions.pkl"), "wb") as f:
     pickle.dump(predictions_to_store, f)
