@@ -3,19 +3,34 @@ from pathlib import Path
 
 sys.path.append(Path(__file__).parent.as_posix())
 import logging
-
+import os
 import torch
 import torchvision
 from provider import convert_coco_poly_to_mask
-
+from PIL import Image
+from typing import List, Any
 
 class EncordMaskRCNNDataset(torchvision.datasets.CocoDetection):
     def __init__(self, img_folder, ann_file, transforms=None):
         super().__init__(img_folder, ann_file)
         self._transforms = transforms
 
+    def _load_image(self, id: int) -> Image.Image:
+        path = self.coco.loadImgs(id)[0]["file_name"]
+        full_path = os.path.join(self.root, path).replace('\\', '/')
+        return Image.open(full_path).convert("RGB")
+
+    def _load_target(self, id: int) -> List[Any]:
+        return self.coco.loadAnns(self.coco.getAnnIds(id))
+
     def __getitem__(self, idx):
-        img, target = super().__getitem__(idx)
+        id = self.ids[idx]
+        img = self._load_image(id)
+        target = self._load_target(id)
+
+        if self.transforms is not None:
+            img, target = self.transforms(img, target)
+
         img_metadata = self.coco.loadImgs(self.ids[idx])
 
         image_id = self.ids[idx]
